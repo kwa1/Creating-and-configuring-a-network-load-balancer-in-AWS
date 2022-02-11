@@ -1,0 +1,357 @@
+Creating and configuring a network load balancer in AWS
+Lab Details
+This lab walks you through the steps to create and configure a network load balancer.
+
+Duration: 1 hour.
+
+AWS Region: US East (N. Virginia) us-east-1
+
+Introduction
+Elastic Load Balancer (ELB)
+Elastic Load Balancing is one of the services provided by AWS to distribute the incoming application or network traffic across multiple targets, such as EC2 instances, containers, and IP addresses.
+
+ELB scales your load balancer based on traffic over time.
+
+ELB makes your applications highly available and fault tolerant.     
+
+It uses health checks to detect which instances are healthy and directs traffic only across those instances.
+
+You can add and remove resources from your load balancer depending on your need without disrupting the flow of requests to your applications.
+
+Types of Elastic Load Balancers
+Elastic Load Balancing supports three types of load balancers:
+
+Application Load Balancer
+
+Network Load Balancer
+
+Classic Load Balancer
+
+Application Load Balancer is best suited for load balancing of HTTP and HTTPS traffic
+
+Network Load Balancer is used to distribute the traffic or load using TCP/UDP protocols
+
+Classic Load Balancer provides basic load balancing across multiple Amazon EC2 instances. 
+
+Network Load Balancer
+The network load balancer (NLB) distributes the traffic based on network variables, such as IP address and destination ports.
+
+NLB is capable of processing traffic and scaling at a much higher rate than the application load balancer.
+
+We can't use some features of the Application Load Balancer such as SSL-offloading, host-based routing, cross-zone load balancing, and a few others.
+
+The complete comparison among load balancers can be found in the link Load balancer differences.
+
+It is not designed to take into consideration anything at the application layer, such as content type, cookie data, custom headers, user location, or the application behavior.
+
+For TCP traffic, NLB selects a target using a flow hash algorithm based on the type of protocol, source IP address, source port, destination IP address and destination port.
+
+TCP connections from a client have different source ports and sequence numbers compared with NLB and can be routed to different targets. 
+
+Each individual TCP connection is routed to a single target for a connection.
+
+A UDP flow has the same source and destination, so it is consistently routed to a single target throughout its lifetime. 
+
+Different UDP flows have different source IP addresses and ports, so they can be routed to different targets. 
+
+The advantage of NLB is that it can manage the traffic to a different port to the same instance.
+
+We can split the request based on the port to different services using the Network Load Balancer, thus NLB allows you to route the traffic among multiple applications running on the same server.
+
+Architecture Diagram
+
+
+Task Details
+
+Launching Lab Environment
+
+Creating an EC2 instance 
+
+Creating a Network Load balancer with two target groups named apache-tg and nginx-tg.
+
+Route traffic to port 80.
+
+Attach the instance with nginx-tg to listen to the Nginx service on port 8080.
+
+Installing Apache and Nginx services in the EC2 instance.
+
+Testing the Network Load Balancer.
+
+Validation of the lab.
+
+Deleting AWS Resources.
+
+Lab Steps
+Task 1: Launching Lab Environment
+Launch the lab environment by clicking on . Please wait until the lab environment is provisioned. It will take less than 2 minutes to provision the lab environment.
+
+Once the Lab is started, you will be provided with IAM user name, Password, AccessKey and Secret Access Key.
+
+Click on the , AWS Management Console will open in a new tab.
+
+In the AWS sign in page, the Account ID will be present by default.
+
+Leave the Account ID as default. Do not remove or change the Account ID otherwise you cannot proceed with the lab.
+
+Copy and paste the IAM user name and Password into AWS Console. Click on Sign in to log into the AWS Console.
+
+Note : If you face any issues, please go through FAQs and Troubleshooting for Labs.
+
+Task 2: Launching an EC2 Instance
+Make sure you are in US East (N. Virginia) us-east-1 Region.
+
+Navigate to EC2 by clicking on the  menu in the top, then click on  in the  section.
+
+Navigate to Instances on the left panel and click on Launch instances on the right.
+
+Choose an Amazon Machine Image (AMI): Search for Amazon Linux 2 AMI in the search box and click on the select button.
+
+
+Choose an Instance Type: Select  and then click on  
+
+Number of instances    : 1        
+
+Auto-assign Public IP    : Select Enable       
+
+Click on .       
+
+Under the User data section, copy and paste the below code. This code installs Apache Server and also creates a web page.
+
+ Copy
+                                #!/bin/bash
+
+sudo su
+
+yum update -y
+
+yum install httpd -y
+
+systemctl start httpd
+
+systemctl enable httpd
+
+echo “<html> <h1> Response coming from server </h1> </ html>” /var/www/html/index.html
+
+ 
+Now click on 
+Add Storage: No need to change anything in this step, click on 
+
+Add Tags: Click on 
+
+Key              : Enter Name        
+
+Value            : Enter NLBEC2server        
+
+Click on : 
+
+ Configure Security Group:
+
+Name        :  Enter  NLBserver-SG
+
+Description    :  Type security group for NLBEC2server 
+
+To add SSH
+
+Choose Type : Select 
+Source           : Choose Custom and enter 0.0.0.0/0
+
+For HTTP, click on .
+
+Choose Type : Select HTTP
+Source           : Choose Custom and enter 0.0.0.0/0
+
+For  Nginx, Click on .
+
+Choose Type : Select Custom TCP Rule
+Port Range    : Enter 8080
+
+Source            : Choose Custom and enter 0.0.0.0/0
+
+    
+
+After that, click on 
+
+Review and Launch: Review all settings and click on .
+
+Key Pair: Create a new key pair and click on . Click on .
+
+Click on .
+
+Now in the EC2 dashboard, you can see the instance is running as shown below:
+
+
+
+Task 3: Creating Network Load Balancer
+Navigate to Load Balancers from the EC2 left menu bar under the sub-heading Load balancing.
+
+Click on the .
+
+Select Load Balancer Type: Under the , click on .
+
+The next five screens will require configuration modification from the default values provided. If a field is not mentioned, leave it as default or empty.
+
+Configure Load Balancer:
+Name            : Enter MyNetwork-LB
+Scheme        : Select 
+
+VPC            : Select default VPC
+
+Mappings : Select all available zones using a checkbox.
+
+Listeners and routing:
+
+Load Balancer Protocol    : Select TCP
+
+Load Balancer Port    : Choose  80
+
+Default action : Create target group
+
+Choose a target type: Instances
+
+Target group name: Enter Apache-TG
+
+Protocol: Choose TCP
+
+Port: 80
+
+Click Next
+
+Select NLBEC2Server and click Create target group button
+
+Ignore the warning message and click Continue
+
+Now we can see Apache-TG target group created. 
+
+Now go back to the Load Balancers tab, and select Apache-TG in Default Action in Listeners and routing.
+
+Tags            
+
+Key    :  Enter Name
+
+Value    : Enter MyNetwork-LB
+
+Click on Create load balancer button
+
+Click on View Load Balancers
+
+After 1-2 minutes the state will change to active and is ready.
+
+
+
+Task 4: Create Target Group for Nginx
+Navigate to  available in the left menu of EC2 Page. It will be available under the sub-heading Load Balancing.
+
+Click on Create target group.
+
+In the Create Target Group form Basic configuration: 
+
+Choose a target type: Instances
+
+Target group name     : Enter Nginx-TG
+
+Protocol        : choose TCP
+
+Port            : Enter 8080
+
+
+
+Leave other settings as default. Click on the Next button.
+
+Select the NLBEC2server and click on Create target group button.
+
+
+
+Ignore the warning message and click Continue.
+
+Navigate to Target Groups on the left and click on it.
+
+Under Register targets select NLBEC2server and click on Include as pending below.
+
+Click on Register pending targets button.
+
+Do these same steps for Nginx-TG too and wait 5-10 minutes for it to become active.
+
+
+
+Task 5: Creating a New Listener for Nginx on port 8080
+
+Now we need to add a new listener for Nginx to listen for traffic on port 8080.
+
+Navigate to the Load Balancer console and select the MyNetwork-LB. Click on  as shown below:
+
+
+
+Now add the new listener as follows:
+
+Protocol    : Select TCP
+
+Port        : Enter 8080
+
+Click on   and then 
+
+Chose the Nginx-TG  as shown below:
+
+
+
+Click on Add listener on the top right.
+
+Both Listeners will be shown.
+
+
+Task 6: Installing and configuring Nginx
+SSH into the EC2 instance, following the steps in SSH into EC2 Instance.
+
+Switch to the root user using the command:   
+
+sudo su
+You will see apache is already installed and listening on port 80. To do so, run the following commands:
+
+To find version:
+
+ httpd -v
+
+To find HTTPD running: 
+
+lsof -i tcp:80
+
+
+
+Now install Nginx using below command:
+
+ sudo amazon-linux-extras install nginx1 -y
+Now we need to change the port number for Nginx service to 8080 because HTTPD service already running on port. To do so, type the following commands: 
+
+cd  /etc/nginx  
+vi  nginx.conf
+
+
+Scroll down and edit the 'listen' line to port number 8080. To edit in vi, press i to insert. After editing, press esc and give command :wq which saves the file and quits from vi.
+
+
+
+Now change the default port number 80 to 8080 as shown below:
+
+
+
+Start the Nginx service using below command:
+
+service nginx start
+
+You can check the status of Nginx service using the below command:
+
+lsof -i tcp:8080
+
+
+
+Task 7: Testing Network Load Balancer
+Wait 3 to 4 minutes until the target reaches healthy status and navigate to the Load balancer console and copy the DNS name. Enter the address in the browser.
+
+MyNetwork-LB-0a4ff4cc035bae63.elb.us-east-1.amazonaws.com
+
+
+You will see the default apache page. By default network load balancer will route the traffic to port 80
+
+
+
+Now repeat the above step by appending port number 8080 at the end of load balancer endpoint (as shown below) and you will get the Nginx default page. MyNetwork-LB-0a4ff4cc035bae63.elb.us-east-1.amazonaws.com:8080
+
